@@ -1,0 +1,89 @@
+# python -m pytest -v --junitxml=test-results.xml --cov --cov-report=term-missing --cov-report=xml --cov-report=html
+# 2026-10-24 20:32 UTC — Python 3.12.3
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.7.0 -- /home/user/venv312/bin/python
+rootdir: /home/user/atendeja-src/AtendeJa
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1, cov-7.1.0
+collecting ... collected 57 items
+
+tests/test_api.py::test_health PASSED                                    [  1%]
+tests/test_api.py::test_create_ticket PASSED                             [  3%]
+tests/test_api.py::test_create_preferred PASSED                          [  5%]
+tests/test_api.py::test_blank_name PASSED                                [  7%]
+tests/test_api.py::test_empty_name PASSED                                [  8%]
+tests/test_api.py::test_invalid_priority PASSED                          [ 10%]
+tests/test_api.py::test_get_missing PASSED                               [ 12%]
+tests/test_api.py::test_finish_missing PASSED                            [ 14%]
+tests/test_api.py::test_next_empty PASSED                                [ 15%]
+tests/test_api.py::test_full_flow PASSED                                 [ 17%]
+tests/test_api.py::test_invalid_status_filter PASSED                     [ 19%]
+tests/test_api.py::test_isolated_test_client_state PASSED                [ 21%]
+tests/test_api.py::test_name_padded_to_max_length_accepted PASSED        [ 22%]
+tests/test_api.py::test_name_too_long_after_trim PASSED                  [ 24%]
+tests/test_api.py::test_name_is_trimmed PASSED                           [ 26%]
+tests/test_api.py::test_missing_name PASSED                              [ 28%]
+tests/test_api.py::test_not_found_detail_message PASSED                  [ 29%]
+tests/test_api.py::test_next_empty_detail PASSED                         [ 31%]
+tests/test_api.py::test_finish_waiting_conflict_detail PASSED            [ 33%]
+tests/test_api.py::test_queue_empty PASSED                               [ 35%]
+tests/test_api.py::test_queue_order_and_excludes_non_waiting PASSED      [ 36%]
+tests/test_api.py::test_original_contract_routes_preserved PASSED        [ 38%]
+tests/test_api.py::test_ticket_output_fields PASSED                      [ 40%]
+tests/test_api.py::test_web_interface_served PASSED                      [ 42%]
+tests/test_api.py::test_static_assets_served[app.js-javascript] PASSED   [ 43%]
+tests/test_api.py::test_static_assets_served[styles.css-text/css] PASSED [ 45%]
+tests/test_api.py::test_static_missing_asset PASSED                      [ 47%]
+tests/test_api.py::test_web_interface_does_not_inject_html PASSED        [ 49%]
+tests/test_api.py::test_web_interface_uses_only_existing_routes PASSED   [ 50%]
+tests/test_api.py::test_domain_validation_reached_through_api[\x1f] PASSED [ 52%]
+tests/test_api.py::test_domain_validation_reached_through_api[\x1c\x1d] PASSED [ 54%]
+tests/test_api.py::test_api_version_matches_release PASSED               [ 56%]
+tests/test_domain.py::test_empty_queue PASSED                            [ 57%]
+tests/test_domain.py::test_create_normal PASSED                          [ 59%]
+tests/test_domain.py::test_trim_name PASSED                              [ 61%]
+tests/test_domain.py::test_invalid_name[] PASSED                         [ 63%]
+tests/test_domain.py::test_invalid_name[  ] PASSED                       [ 64%]
+tests/test_domain.py::test_invalid_name[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] PASSED [ 66%]
+tests/test_domain.py::test_increasing_ids PASSED                         [ 68%]
+tests/test_domain.py::test_missing_ticket PASSED                         [ 70%]
+tests/test_domain.py::test_fifo_same_priority PASSED                     [ 71%]
+tests/test_domain.py::test_priority_before_normal PASSED                 [ 73%]
+tests/test_domain.py::test_preferred_fifo PASSED                         [ 75%]
+tests/test_domain.py::test_call_empty_queue PASSED                       [ 77%]
+tests/test_domain.py::test_cannot_call_twice PASSED                      [ 78%]
+tests/test_domain.py::test_cannot_finish_waiting PASSED                  [ 80%]
+tests/test_domain.py::test_finish_called PASSED                          [ 82%]
+tests/test_domain.py::test_cannot_finish_twice PASSED                    [ 84%]
+tests/test_domain.py::test_list_filter PASSED                            [ 85%]
+tests/test_domain.py::test_name_at_max_length PASSED                     [ 87%]
+tests/test_domain.py::test_finish_missing_ticket PASSED                  [ 89%]
+tests/test_domain.py::test_waiting_queue_order PASSED                    [ 91%]
+tests/test_domain.py::test_waiting_queue_matches_call_order PASSED       [ 92%]
+tests/test_domain.py::test_strict_priority_keeps_normal_waiting PASSED   [ 94%]
+tests/test_domain.py::test_concurrent_call_next_never_repeats_ticket PASSED [ 96%]
+tests/test_domain.py::test_concurrent_create_unique_ids PASSED           [ 98%]
+tests/test_homologacao.py::test_homologation_script_passes_in_process PASSED [100%]
+
+=============================== warnings summary ===============================
+../../venv312/lib/python3.12/site-packages/fastapi/testclient.py:1
+  <site-packages>/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+---- generated xml file: ./test-results.xml -----
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name              Stmts   Miss Branch BrPart  Cover   Missing
+-------------------------------------------------------------
+app/__init__.py       1      0      0      0   100%
+app/domain.py        63      0     10      0   100%
+app/main.py          65      0      0      0   100%
+-------------------------------------------------------------
+TOTAL               129      0     10      0   100%
+Coverage HTML written to dir htmlcov
+Coverage XML written to file coverage.xml
+Required test coverage of 95.0% reached. Total coverage: 100.00%
+======================== 57 passed, 1 warning in 3.06s =========================

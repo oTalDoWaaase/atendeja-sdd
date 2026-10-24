@@ -1,0 +1,24 @@
+# Homologação contra container Docker (docker compose up api) — 2026-10-24 20:30 UTC
+# Imagem: target runtime, usuário atendeja
+PASS  h01_health
+PASS  h02_painel
+PASS  h03_validacao
+PASS  h04_fila_e_prioridade
+PASS  h05_transicoes
+PASS  h06_filtros
+PASS  h07_concorrencia
+PASS  h08_contrato_e_versao
+
+8/8 cenários aprovados em http://127.0.0.1:8000
+exit=0
+
+# Reinício do container: fila deve ser apagada (limitação ADR-002)
+antes: 65 senhas
+depois: 0 senhas
+
+# Observação: HEAD / responde 405 (rotas FastAPI declaradas com GET não aceitam HEAD).
+# Cabeçalhos de GET /
+HTTP/1.1 200 OK
+content-security-policy: default-src 'self'; img-src 'self' data:; frame-ancestors 'none'
+x-content-type-options: nosniff
+referrer-policy: no-referrer

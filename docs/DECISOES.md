@@ -28,3 +28,15 @@ Status: aceita. A API validava 1–80 caracteres sobre o texto bruto, e o domín
 
 ## ADR-008 Ordem de chamada exposta por GET /queue (v1.1)
 Status: aceita. Em vez de o painel reordenar a lista em JavaScript (duplicando a regra de prioridade), o domínio expõe `waiting_queue()`, que usa a mesma função de ordenação de `call_next()`. Rota nova e somente de leitura; nenhum contrato existente foi alterado. Um teste garante que a sequência de `call_next()` é idêntica a `waiting_queue()`.
+
+## ADR-009 Dependências separadas e Docker em estágios (1.0.0)
+Status: aceita tecnicamente; **homologação humana pendente**. `requirements.txt` passa a conter só o necessário para executar (fastapi, uvicorn, pydantic); `requirements-dev.txt` inclui o anterior e acrescenta pytest, pytest-cov e httpx. O `Dockerfile` tem o estágio `runtime` (usuário não-root `atendeja`, sem ferramentas de teste) e o estágio `test` (estende o `runtime`). O `docker-compose.yml` aponta `api` para `runtime` e `tests` para `test`. Motivo: menor superfície de ataque e higiene da imagem de produção. Consequências: o CI e o README instalam `requirements-dev.txt`; na imagem de testes, `COVERAGE_FILE=/tmp/.coverage`, porque `/app` não é gravável pelo usuário não-root (falha encontrada na homologação, D1).
+
+## ADR-010 Cobertura com pytest-cov e limite mínimo de 95% (1.0.0)
+Status: aceita. A configuração fica em `pyproject.toml` (`source = app`, cobertura de ramos, `fail_under = 95`), para que terminal, Docker e CI usem as mesmas regras com `pytest --cov`. O limite fica abaixo dos 100% medidos para não punir refatorações pequenas, mas impede regressões grandes. Limite: o JavaScript do painel não é medido.
+
+## ADR-011 Versionamento semântico, release 1.0.0 (1.0.0)
+Status: proposta; **depende de autorização humana para publicar**. "v1.0" e "v1.1" eram versões do documento SDD. A primeira release estável usa SemVer `1.0.0`, definida em `app/__init__.py` e exposta em `/openapi.json` (verificado por teste). A tag `v1.0.0` só será criada depois do checklist de homologação.
+
+## ADR-012 Relatórios gerados fora do Git; evidência congelada em docs/evidencias (1.0.0)
+Status: aceita. `test-results.xml`, `coverage.xml`, `.coverage` e `htmlcov/` são ignorados na raiz, pois são gerados a cada execução e publicados como artefatos do CI. Para a avaliação acadêmica, a execução de homologação de 24/10/2026 fica congelada em `docs/evidencias/` (saídas de terminal, JUnit, `coverage.xml`, versões instaladas). O HTML de cobertura não é versionado por ser volumoso e reproduzível.

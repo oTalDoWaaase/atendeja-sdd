@@ -1,8 +1,11 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      target: runtime
     ports:
       - "8000:8000"
   tests:
-    build: .
-    command: ["python", "-m", "pytest", "-q"]
+    build:
+      context: .
+      target: test

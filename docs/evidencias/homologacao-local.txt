@@ -1,0 +1,12 @@
+# Homologação sem Docker (uvicorn local, Python 3.12.3) — 2026-10-24 20:32 UTC
+PASS  h01_health
+PASS  h02_painel
+PASS  h03_validacao
+PASS  h04_fila_e_prioridade
+PASS  h05_transicoes
+PASS  h06_filtros
+PASS  h07_concorrencia
+PASS  h08_contrato_e_versao
+
+8/8 cenários aprovados em http://127.0.0.1:8000
+exit=0

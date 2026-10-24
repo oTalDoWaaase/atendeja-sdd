@@ -1,13 +1,13 @@
 # Análise técnico-ética de IA
 
 ## Escopo e método
-Projeto criado com assistência de ChatGPT para geração inicial de código, testes e documentação (v1.0). O refinamento v1.1 (painel web, correções e documentação) foi feito com o Claude Code, agente que lê o repositório, executa comandos e edita arquivos. Não se afirma que ferramentas não utilizadas tenham sido testadas. Comparação abaixo é qualitativa, baseada no tipo de fluxo oferecido pelas ferramentas, e não em benchmark deste projeto.
+Projeto criado com assistência de ChatGPT para geração inicial de código, testes e documentação (v1.0). O refinamento v1.1 (painel web, correções e documentação) e a Entrega 3 (cobertura, Docker, CI, homologação) foram feitos com o Claude Code, agente que lê o repositório, executa comandos e edita arquivos. Não se afirma que ferramentas não utilizadas tenham sido testadas. Comparação abaixo é qualitativa, baseada no tipo de fluxo oferecido pelas ferramentas, e não em benchmark deste projeto.
 
 | Ferramenta | Potencial ponto forte | Limitação / risco | Uso neste projeto |
 |---|---|---|---|
 | ChatGPT | Decomposição de requisitos, geração e análise de casos de teste | Pode gerar código incompleto e conclusões excessivamente confiantes | Geração inicial assistida |
 | Codex | Edição orientada a repositório, execução e iteração sobre testes | Alterações amplas ou destrutivas sem revisão cuidadosa | Opcional: registrar somente se usado |
-| Claude Code | Exploração de base de código, edição e revisão iterativa | Pode consumir contexto, errar dependências e suposições | Não usado na v1.0; usado no refinamento v1.1 (ver seção abaixo) |
+| Claude Code | Exploração de base de código, edição e revisão iterativa | Pode consumir contexto, errar dependências e suposições | Não usado na v1.0; usado na v1.1 e na Entrega 3 (ver seção abaixo e RETROSPECTIVA.md) |
 | Cursor | Edição contextual dentro da IDE | Sugestões locais incorretas e dependência de configurações | Não utilizado nesta versão inicial |
 
 ## Segurança, privacidade e governança
@@ -29,9 +29,9 @@ Onde a IA errou ou exige cautela:
 - Testes escritos pelo mesmo agente que escreveu o código podem compartilhar os mesmos pontos cegos. Por isso a revisão humana do PR não é dispensável.
 - Os testes de concorrência dependem de forçar trocas de thread; dão boa evidência, mas não provam ausência de corrida.
 
-O que a IA **não** fez e não deve ser declarado como feito: revisão humana, aprovação de PR, execução no GitHub Actions, execução em Docker (daemon indisponível), testes com usuários, análise jurídica da prioridade.
+O que a IA **não** fez e não deve ser declarado como feito: revisão humana, aprovação de PR ou release, execução no GitHub Actions, testes com usuários, análise jurídica da prioridade. (Docker não pôde ser executado na v1.1; na Entrega 3 foi executado, ver HOMOLOGACAO.md.)
 
-## Limites de segurança vigentes (v1.1)
+## Limites de segurança vigentes (1.0.0)
 | Controle | Situação |
 |---|---|
 | Autenticação/autorização | Ausente: qualquer cliente da rede pode criar, chamar e concluir senhas |
@@ -41,6 +41,8 @@ O que a IA **não** fez e não deve ser declarado como feito: revisão humana, a
 | Persistência e auditoria | Ausentes: dados em memória, sem trilha de quem chamou/concluiu |
 | Dados pessoais | Nomes em memória e na tela; sem política de retenção. Usar apenas dados fictícios |
 | Escala | Lock válido para um processo; não usar múltiplos workers |
+| Container | Mitigado: imagem de execução roda como usuário não-root, sem ferramentas de teste |
+| Dependências | `pip-audit` sem vulnerabilidades conhecidas em 24/10/2026; versões declaradas por faixa, não fixadas |
 
 ## Aprendizados e limites
 O maior ganho do apoio de IA foi acelerar o primeiro ciclo SDD -> código -> testes. O maior risco foi confundir código gerado com código validado. O CI serve como evidência repetível, mas não demonstra ausência de vulnerabilidades nem satisfação integral dos usuários. Toda conclusão deve estar vinculada ao log real de execução.
