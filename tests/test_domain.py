@@ -1,3 +1,5 @@
+import sys
+import threading
 import pytest
 from app.domain import QueueService, Priority, Status
 
@@ -76,3 +78,70 @@ def test_list_filter(queue):
     queue.call_next()
     assert len(queue.list(Status.esperando)) == 1
     assert len(queue.list(Status.chamado)) == 1
+
+def test_name_at_max_length(queue):
+    assert len(queue.create('x' * 80).name) == 80
+
+def test_finish_missing_ticket(queue):
+    with pytest.raises(KeyError):
+        queue.finish(999)
+
+def test_waiting_queue_order(queue):
+    n1 = queue.create('N1')
+    p1 = queue.create('P1', Priority.preferencial)
+    n2 = queue.create('N2')
+    p2 = queue.create('P2', Priority.preferencial)
+    assert [t.id for t in queue.waiting_queue()] == [p1.id, p2.id, n1.id, n2.id]
+
+def test_waiting_queue_matches_call_order(queue):
+    for i, priority in enumerate([Priority.normal, Priority.preferencial] * 3):
+        queue.create(f'C{i}', priority)
+    expected = [t.id for t in queue.waiting_queue()]
+    assert [queue.call_next().id for _ in expected] == expected
+    assert queue.waiting_queue() == []
+
+def test_strict_priority_keeps_normal_waiting(queue):
+    # Caracteriza a regra vigente (ADR-003): preferenciais que chegam depois
+    # continuam passando à frente da normal. Mudar isso exige decisão humana.
+    normal = queue.create('Normal')
+    for i in range(3):
+        queue.create(f'P{i}', Priority.preferencial)
+        assert queue.call_next().priority == Priority.preferencial
+    assert queue.call_next().id == normal.id
+
+def _run_concurrently(worker, threads=16):
+    previous = sys.getswitchinterval()
+    sys.setswitchinterval(1e-6)  # força trocas de thread frequentes para expor corridas
+    barrier = threading.Barrier(threads)
+    def run():
+        barrier.wait()
+        worker()
+    pool = [threading.Thread(target=run) for _ in range(threads)]
+    try:
+        for t in pool:
+            t.start()
+        for t in pool:
+            t.join()
+    finally:
+        sys.setswitchinterval(previous)
+
+def test_concurrent_call_next_never_repeats_ticket(queue):
+    # Regressão: sem lock, a mesma senha era chamada por mais de uma thread.
+    for i in range(320):
+        queue.create(f'C{i}')
+    called = []
+    def worker():
+        for _ in range(20):
+            called.append(queue.call_next().id)
+    _run_concurrently(worker)
+    assert len(called) == 320
+    assert len(set(called)) == 320
+    assert queue.list(Status.esperando) == []
+
+def test_concurrent_create_unique_ids(queue):
+    def worker():
+        for _ in range(50):
+            queue.create('C')
+    _run_concurrently(worker)
+    ids = [t.id for t in queue.list()]
+    assert sorted(ids) == list(range(1, 16 * 50 + 1))
