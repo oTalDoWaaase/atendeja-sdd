@@ -1,7 +1,7 @@
 # Instruções para agentes de IA
 - Leia docs/SDD.md antes de alterar código.
 - Preserve as regras de prioridade preferencial e FIFO na mesma classe.
-- Nunca afirme que testes passaram sem executar `python -m pytest -v`.
+- Nunca afirme que testes passaram sem executar `python -m pytest -v --cov` (instale `requirements-dev.txt`); a cobertura mínima é 95%.
 - Teste casos de borda, erros HTTP e isolamento entre testes.
 - Não introduza autenticação falsa ou persistência sem documentar impacto e testes.
 - Não exponha credenciais, dados pessoais reais ou segredos no repositório.
@@ -11,3 +11,6 @@
 - Operações de `QueueService` devem permanecer sob o lock; não mova a regra de ordenação para o painel (use `GET /queue`).
 - No painel (`app/static/`), renderize dados apenas com `textContent`; não use `innerHTML`, CDN ou dependências de build.
 - Corrija defeitos reproduzindo-os primeiro e adicionando teste de regressão que falhe no código antigo.
+- Dependências de execução vão em `requirements.txt`; ferramentas de teste, em `requirements-dev.txt`.
+- Registre evidências de homologação em docs/HOMOLOGACAO.md e docs/evidencias/; não marque itens do checklist humano.
+- Não crie tags nem publique releases sem autorização explícita do autor.

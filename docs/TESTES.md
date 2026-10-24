@@ -1,8 +1,24 @@
 # Evidências de testes
 
-Comando (o mesmo do CI): `python -m pytest -v --junitxml=test-results.xml`
+Comando do CI: `python -m pytest -v --junitxml=test-results.xml --cov --cov-report=term-missing --cov-report=xml --cov-report=html`
 
-## Execução v1.1 — 24/10/2026 (refinamento)
+## Execução 1.0.0 — 24/10/2026 (Entrega 3)
+Registro completo em [HOMOLOGACAO.md](HOMOLOGACAO.md). Resumo:
+
+| Execução | Resultado |
+|---|---|
+| Suíte v1.1 antes das mudanças (Python 3.12.3) | 53 passed |
+| Suíte final com cobertura (Python 3.12.3) | **57 passed; 100% de linhas e ramos em `app/`** ([saída](evidencias/pytest-cobertura.txt)) |
+| Suíte final no container (`docker compose run --build --rm tests`) | 57 passed, 100% (após corrigir a falha D1) |
+| `scripts/homologacao.py` contra o Docker e contra o uvicorn local | 8/8 e 8/8 |
+| Roteiro no navegador contra o Docker | 12/12 |
+| GitHub Actions | **Não executado**: sem remoto configurado neste ambiente |
+
+Novos testes: `test_domain_validation_reached_through_api` (2 casos, cobre o ramo antes descoberto), `test_api_version_matches_release` e `test_homologation_script_passes_in_process`. Distribuição: domínio 24, API 32, homologação 1.
+
+> As seções abaixo são o registro histórico da v1.1. Naquela época o Docker não pôde ser executado; na Entrega 3, foi.
+
+## Execução v1.1 — 24/10/2026 (refinamento, histórico)
 Ambiente: container Linux de nuvem do Claude Code, executado pelo agente de IA. Versões instaladas a partir de `requirements.txt`: fastapi 0.162.0, starlette 1.10.0, pydantic 2.14.1, pytest 9.1.1, httpx 0.28.1, uvicorn 0.54.0.
 
 | Execução | Resultado |

@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from app import __version__
 from app.main import STATIC_DIR, create_app
 import pytest
 
@@ -139,3 +140,14 @@ def test_web_interface_uses_only_existing_routes():
     source = (STATIC_DIR / 'app.js').read_text(encoding='utf-8')
     for route in ("'/tickets'", "'/queue'", "'/tickets/next'", '/finish'):
         assert route in source
+
+@pytest.mark.parametrize('name', ['\x1f', '\x1c\x1d'])
+def test_domain_validation_reached_through_api(client, name):
+    # Pydantic e str.strip() divergem em alguns separadores de controle; o domínio
+    # é a última barreira e seu erro precisa virar 422, não 500.
+    r = client.post('/tickets', json={'name': name})
+    assert r.status_code == 422
+    assert r.json() == {'detail': 'Nome deve conter entre 1 e 80 caracteres.'}
+
+def test_api_version_matches_release(client):
+    assert client.get('/openapi.json').json()['info']['version'] == __version__ == '1.0.0'

@@ -1,73 +1,128 @@
-# SDD — AtendeJá v1.1
+# SDD — AtendeJá 1.0.0 (As-Built)
 
-> Histórico: v1.0 (Entrega 2) — API REST. v1.1 (este refinamento) — interface web, rota `GET /queue`, correções de concorrência e validação. Detalhes em [REFINAMENTOS.md](REFINAMENTOS.md).
+Especificação definitiva do que foi **efetivamente entregue** na release 1.0.0. Cada regra abaixo aponta o código que a implementa e os testes que a verificam. Histórico da especificação: v1.0 (Entrega 2, só API) → v1.1 (painel web e correções, ver [REFINAMENTOS.md](REFINAMENTOS.md)) → 1.0.0 As-Built (Entrega 3). O número 1.0.0 segue o versionamento semântico da primeira release estável (ADR-011); "v1.0/v1.1" eram versões do documento.
 
-## Problema e solução
-Pequenos estabelecimentos precisam organizar senhas de atendimento com prioridades, rastreamento de estado e ordenação previsível. O AtendeJá expõe uma API REST de gestão de fila e um painel web servido pela própria aplicação, sem exigir serviço externo.
+## 1. Problema e escopo
+Pequenos estabelecimentos precisam organizar senhas de atendimento com prioridade, rastreamento de estado e ordenação previsível. O AtendeJá é um serviço único (API REST + painel web) que mantém a fila em memória, sem serviços externos.
 
-## Atores
-Atendente que cadastra clientes e chama a próxima senha. Operador que conclui atendimentos. Ambos podem usar o painel web (`/`) ou a API diretamente.
+Fora do escopo desta release: autenticação, persistência, múltiplas filas/guichês, cancelamento ou rechamada de senha, painel público de TV, relatórios.
 
-## Requisitos funcionais
-- RF01 Criar senha informando nome de 1–80 caracteres e prioridade normal/preferencial. Espaços nas bordas são removidos **antes** de validar o tamanho (v1.1: regra aplicada igualmente na API e no domínio).
-- RF02 Listar senhas, opcionalmente filtradas por estado.
-- RF03 Consultar uma senha por identificador.
-- RF04 Chamar a próxima senha respeitando preferencial antes de normal e FIFO dentro da mesma prioridade. Cada senha em espera é chamada no máximo uma vez, mesmo com requisições simultâneas (v1.1).
-- RF05 Concluir apenas senhas no estado chamado.
-- RF06 Oferecer verificação de disponibilidade /health.
-- RF07 (v1.1) Consultar a fila de espera na ordem exata em que será chamada (`GET /queue`). A ordenação é a mesma função usada por RF04, para que painel e regra nunca divirjam.
-- RF08 (v1.1) Painel web responsivo para: cadastrar senha, visualizar a fila em ordem de chamada e a próxima senha, chamar o próximo, listar atendimentos em andamento e concluí-los, e ver os concluídos recentes.
+## 2. Atores
+| Ator | Usa | Ações |
+|---|---|---|
+| Atendente | Painel (`/`) ou API | Cadastrar senha, chamar a próxima |
+| Operador | Painel ou API | Concluir atendimento |
+| Integrador/avaliador | Swagger (`/docs`), `curl`, script de homologação | Qualquer rota |
 
-## Requisitos não funcionais
-- RNF01 API documentada automaticamente em /docs.
-- RNF02 Componentes de regra separados do framework HTTP.
-- RNF03 Reprodutibilidade por Python/requirements e Docker.
-- RNF04 Suíte pytest e CI com resultado JUnit.
-- RNF05 Sem armazenar dados sensíveis reais neste protótipo.
-- RNF06 (v1.1) Operações de fila atômicas dentro de um processo (lock em `QueueService`), pois o FastAPI executa endpoints síncronos em várias threads.
-- RNF07 (v1.1) Painel sem dependências de build nem CDN: HTML, CSS e JavaScript estáticos servidos pela aplicação. Funciona de 320 px a desktop, respeita modo escuro e `prefers-reduced-motion`.
-- RNF08 (v1.1) Segurança mínima do painel: nomes renderizados apenas como texto (`textContent`, nunca `innerHTML`); a página `/` envia `Content-Security-Policy: default-src 'self'`, `X-Content-Type-Options: nosniff` e `Referrer-Policy: no-referrer`.
+## 3. Arquitetura entregue
+```mermaid
+flowchart LR
+    U[Atendente / Operador] --> W["Painel web<br/>app/static (HTML, CSS, JS)"]
+    I[Swagger / curl / scripts/homologacao.py] --> H
+    W -->|fetch JSON, mesma origem, polling 5 s| H["Camada HTTP<br/>app/main.py (FastAPI)"]
+    H --> Q["QueueService<br/>app/domain.py"]
+    Q --> M[(Dicionário em memória<br/>+ threading.Lock)]
+```
 
-## Contratos
-Contratos v1.0 preservados sem alteração de rota, método, código de status ou campos de resposta:
-- POST /tickets: {"name":"Ana","priority":"normal"} -> 201 objeto senha; 422 entrada inválida.
-- GET /tickets?status=esperando -> 200 lista.
-- GET /tickets/{id} -> 200 objeto; 404 inexistente.
-- POST /tickets/next -> 200 senha chamada; 409 fila vazia.
-- POST /tickets/{id}/finish -> 200 concluída; 404 inexistente; 409 transição inválida.
-- GET /health -> 200 {"status":"ok"}.
+| Componente | Arquivo | Responsabilidade |
+|---|---|---|
+| Domínio | `app/domain.py` | `Priority`, `Status`, `Ticket`, `QueueService`: validação do nome, ids sequenciais, ordem de chamada (`_call_order`), transições de estado, lock |
+| HTTP | `app/main.py` | `create_app()`, modelos `TicketInput`/`TicketOutput`, mapeamento de exceções para 404/409/422, rota do painel com cabeçalhos de segurança, arquivos estáticos |
+| Versão | `app/__init__.py` | `__version__ = '1.0.0'`, exposta em `/openapi.json` |
+| Painel | `app/static/index.html`, `styles.css`, `app.js` | Interface responsiva; consome somente a API pública |
+| Testes | `tests/test_domain.py`, `tests/test_api.py`, `tests/test_homologacao.py` | 57 testes; 100% de linhas e ramos em `app/` |
+| Homologação | `scripts/homologacao.py` | 8 cenários contra um servidor real (local ou Docker) |
+| Execução | `Dockerfile` (estágios `runtime` e `test`), `docker-compose.yml` | Imagem de execução sem ferramentas de teste, usuário não-root |
+| CI | `.github/workflows/ci.yml` | Testes + cobertura; artefatos `teste-junit` e `cobertura` |
 
-Objeto senha: `{"id": int, "name": str, "priority": "normal"|"preferencial", "status": "esperando"|"chamado"|"concluido", "created_at": ISO-8601 UTC}`.
+Cada chamada a `create_app()` cria uma `QueueService` própria (isolamento entre testes). O módulo expõe `app = create_app()` para o uvicorn.
 
-Acréscimos v1.1 (somente adições):
-- GET /queue -> 200 lista de senhas `esperando`, ordenada como RF04.
-- GET / -> 200 painel HTML (fora do esquema OpenAPI). GET /static/{arquivo} -> CSS/JS do painel; 404 inexistente.
+## 4. Modelo de domínio
+`Ticket`: `id: int` (sequencial a partir de 1, nunca reutilizado), `name: str` (sem espaços nas bordas), `priority: normal|preferencial`, `status: esperando|chamado|concluido`, `created_at: datetime UTC`.
 
-Mudanças observáveis em erros (status preservados):
-- 404 de `GET /tickets/{id}` e `POST /tickets/{id}/finish`: `detail` passou de `"'Senha não encontrada.'"` (aspas extras, defeito) para `"Senha não encontrada."`.
-- 422 por nome em branco: `detail` passou a ser a lista de validação padrão do FastAPI (antes: texto do domínio). O código 422 é o contrato; o formato do `detail` não era especificado.
-- Nome com espaços nas bordas e até 80 caracteres úteis: antes 422 (defeito), agora 201.
+Máquina de estados, sem regressão nem cancelamento:
+```mermaid
+stateDiagram-v2
+    [*] --> esperando: POST /tickets
+    esperando --> chamado: POST /tickets/next
+    chamado --> concluido: POST /tickets/{id}/finish
+```
 
-## Modelo de estado
-esperando -> chamado -> concluido. Não há regressão de estado nem cancelamento.
+## 5. Regras de negócio
+| Id | Regra | Implementação | Testes principais |
+|---|---|---|---|
+| RN01 | Nome obrigatório com 1–80 caracteres após remover espaços das bordas. Validado na API (Pydantic, `strip_whitespace`) e no domínio (`str.strip()`). Se só o domínio rejeitar (ex.: `"\x1f"`, que o Pydantic não remove), a resposta é 422 com a mensagem do domínio | `TicketInput`, `QueueService.create` | `test_invalid_name`, `test_name_at_max_length`, `test_name_padded_to_max_length_accepted`, `test_name_too_long_after_trim`, `test_domain_validation_reached_through_api` |
+| RN02 | Prioridade `normal` (padrão) ou `preferencial`; outro valor gera 422 | `Priority`, `TicketInput` | `test_invalid_priority`, `test_create_preferred` |
+| RN03 | Ordem de chamada: todos os preferenciais antes dos normais; dentro da mesma prioridade, menor id primeiro (FIFO) | `_call_order` | `test_priority_before_normal`, `test_preferred_fifo`, `test_fifo_same_priority` |
+| RN04 | `GET /queue` e `POST /tickets/next` usam a mesma função de ordem; a sequência de chamadas coincide com a fila exibida | `waiting_queue`, `call_next` | `test_waiting_queue_matches_call_order`, `test_queue_order_and_excludes_non_waiting` |
+| RN05 | Só se conclui senha `chamado`; concluir `esperando` ou `concluido` gera 409 | `QueueService.finish` | `test_cannot_finish_waiting`, `test_cannot_finish_twice`, `test_finish_waiting_conflict_detail` |
+| RN06 | Chamar com fila vazia gera 409 | `QueueService.call_next` | `test_call_empty_queue`, `test_next_empty_detail` |
+| RN07 | Operações atômicas no processo: uma senha nunca é chamada duas vezes e ids não se repetem sob concorrência | `QueueService._lock` | `test_concurrent_call_next_never_repeats_ticket`, `test_concurrent_create_unique_ids`, cenário `h07_concorrencia` |
+| RN08 | Prioridade estrita: uma normal pode esperar indefinidamente se chegarem preferenciais continuamente (comportamento aceito no escopo acadêmico, ver ADR-003) | `_call_order` | `test_strict_priority_keeps_normal_waiting` |
 
-## Decomposição
-- `app/domain.py`: entidades, transições, ordem de chamada (`_call_order`, `waiting_queue`, `call_next`) e lock de concorrência.
-- `app/main.py`: modelos de entrada/saída, HTTP, tratamento de erros, rota do painel e cabeçalhos de segurança.
-- `app/static/`: painel web (`index.html`, `styles.css`, `app.js`), que consome apenas a API pública na mesma origem e se atualiza a cada 5 s com a aba visível.
-- `tests/`: testes de domínio (incluindo concorrência) e integração HTTP (incluindo painel e contratos).
-- A instância da fila pertence à aplicação criada por `create_app()`.
+## 6. Contratos da API (as-built)
+Base: `http://<host>:8000`. Corpo e respostas em JSON UTF-8.
 
-## Limitações e mudanças candidatas
-- Persistência volátil: reiniciar o processo apaga a fila. O lock só vale dentro de **um** processo; com vários workers (`uvicorn --workers N`), cada um teria uma fila diferente. Execute com um único worker.
-- Sem autenticação, autorização, rate limiting, CSRF ou trilha de auditoria: qualquer pessoa que alcance a porta pode criar, chamar e concluir senhas. Não expor fora de rede controlada.
-- Sem política de dados pessoais (LGPD): nomes ficam em memória e aparecem no painel. Usar apenas dados fictícios.
-- Prioridade preferencial estrita pode causar starvation dos normais (ADR-003; comportamento fixado pelo teste `test_strict_priority_keeps_normal_waiting`).
-- O contrato não registra horário de chamada/conclusão; por isso o painel lista concluídos por número de senha, não por horário de conclusão.
-- O painel é validado por testes HTTP no CI e por um roteiro ponta a ponta executado manualmente (ver [TESTES.md](TESTES.md)); não há teste automatizado de navegador no CI.
+Objeto **senha** (`TicketOutput`):
+```json
+{"id": 1, "name": "Ana", "priority": "preferencial", "status": "esperando", "created_at": "2026-10-24T20:30:00.123456+00:00"}
+```
 
-## Decisões que exigem homologação humana
-1. Aceitar as mudanças observáveis em mensagens de erro listadas em "Contratos".
-2. Manter ou substituir a prioridade preferencial estrita (exige análise legal, ex.: Lei nº 10.048/2000, e de equidade).
-3. Validar usabilidade e acessibilidade do painel com usuários reais (não realizado).
-4. Definir autenticação, persistência e política de dados antes de qualquer uso fora do ambiente acadêmico.
+| Método e rota | Entrada | Sucesso | Erros |
+|---|---|---|---|
+| `GET /health` | — | 200 `{"status":"ok"}` | — |
+| `POST /tickets` | `{"name": str, "priority"?: "normal"\|"preferencial"}` | 201 senha | 422 (nome inválido, prioridade inválida, corpo ausente) |
+| `GET /tickets` | `?status=esperando\|chamado\|concluido` (opcional) | 200 lista em ordem de criação | 422 estado inválido |
+| `GET /tickets/{id}` | `id` inteiro | 200 senha | 404 `{"detail":"Senha não encontrada."}`; 422 id não inteiro |
+| `POST /tickets/next` | — | 200 senha que passou a `chamado` | 409 `{"detail":"Não há senhas aguardando."}` |
+| `POST /tickets/{id}/finish` | `id` inteiro | 200 senha `concluido` | 404 inexistente; 409 `{"detail":"Apenas senhas chamadas podem ser concluídas."}` |
+| `GET /queue` | — | 200 lista de senhas `esperando` na ordem RN03 | — |
+| `GET /` | — | 200 HTML do painel com `Content-Security-Policy: default-src 'self'; img-src 'self' data:; frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` | 405 para `HEAD` |
+| `GET /static/{arquivo}` | — | 200 `app.js`, `styles.css`, `index.html` | 404 inexistente |
+| `GET /docs`, `GET /openapi.json` | — | Swagger e esquema OpenAPI (`info.version = "1.0.0"`) | — |
+
+Formato de `detail` nos erros: **texto** quando o erro vem das regras de domínio (404, 409 e o 422 de RN01); **lista de objetos** do FastAPI/Pydantic nos demais 422. O código de status é o contrato; o painel trata os dois formatos.
+
+Compatibilidade: todas as rotas, métodos, status e campos da v1.0 (Entrega 2) estão preservados (`test_original_contract_routes_preserved`, `test_ticket_output_fields`). Desde a v1.0 houve três mudanças observáveis, todas correções de defeitos documentadas em REFINAMENTOS (R2, R3) e ADR-007: o 404 sem aspas extras, o 422 de nome em branco com `detail` em lista, e nomes com espaços nas bordas e até 80 caracteres úteis aceitos.
+
+## 7. Painel web
+| Função | Comportamento entregue |
+|---|---|
+| Nova senha | Nome + prioridade; validação no cliente (1–80 após remover espaços) e exibição do erro 422 da API; contador de caracteres |
+| Próximo da fila | Mostra a primeira senha de `GET /queue`; botão "Chamar próximo" desabilitado com fila vazia |
+| Em atendimento | Cartões das senhas `chamado`, cada um com "Concluir atendimento" |
+| Fila de espera | Ordem de chamada com posição; destaque para preferenciais |
+| Concluídos | Últimas 20 por número (o contrato não registra horário de conclusão) |
+| Indicadores | Aguardando, preferenciais na fila, em atendimento, concluídos |
+| Atualização | `GET /tickets` + `GET /queue` a cada 5 s com a aba visível e após cada ação |
+| Códigos | `P-002` / `N-001`: prefixo pela prioridade + id com 3 dígitos (apenas exibição) |
+| Acessibilidade e layout | Rótulos em todos os campos, `aria-live` nos avisos, foco visível, envio com Enter; layout verificado em 375 px e 1280 px; modo escuro e `prefers-reduced-motion` |
+| Segurança | Dados renderizados só com `textContent`; sem CDN, sem `eval`/`innerHTML` (verificado por teste) |
+
+## 8. Requisitos não funcionais (as-built)
+| Id | Requisito | Evidência |
+|---|---|---|
+| RNF01 | API documentada em `/docs` | `h08_contrato_e_versao` |
+| RNF02 | Regras separadas do framework HTTP | `app/domain.py` não importa FastAPI |
+| RNF03 | Reprodutível com Python 3.12+ (venv) ou Docker | [HOMOLOGACAO.md](HOMOLOGACAO.md): execução local e em container |
+| RNF04 | Testes e cobertura no CI, com limite mínimo de 95% (`fail_under`) | `pyproject.toml`, `ci.yml` |
+| RNF05 | Sem dados sensíveis reais nem segredos no repositório | Auditoria de higiene em HOMOLOGACAO |
+| RNF06 | Operações atômicas num processo | RN07 |
+| RNF07 | Painel sem build nem dependências externas | `app/static/` |
+| RNF08 | Imagem de execução com usuário não-root e sem pacotes de teste | HOMOLOGACAO, cenário D3 |
+
+## 9. Configuração e execução
+Sem variáveis de ambiente nem arquivos de configuração da aplicação. Porta padrão 8000 (definida no comando do uvicorn). Execute com **um único worker**. Dependências: `requirements.txt` (execução: fastapi, uvicorn, pydantic) e `requirements-dev.txt` (+ pytest, pytest-cov, httpx). Configuração do pytest/coverage em `pyproject.toml`.
+
+## 10. Limitações conhecidas
+1. Dados apenas em memória: reiniciar o processo ou container apaga a fila (verificado). Com vários workers, cada um teria uma fila diferente.
+2. Sem autenticação, autorização, rate limiting ou trilha de auditoria. Não expor fora de rede controlada.
+3. Sem política de dados pessoais (LGPD): usar apenas nomes fictícios.
+4. RN08: risco de espera indefinida para senhas normais.
+5. Nomes com caracteres invisíveis ou de controle (ex.: só `​`, ou `a\x00b`) são aceitos, pois a regra RN01 conta caracteres e não restringe quais. Endurecer isso é uma regra nova, que fica para decisão humana.
+6. `HEAD /` responde 405.
+7. O painel é verificado por testes HTTP no CI e por roteiro de navegador executado manualmente; não há teste de navegador no CI. Sem avaliação com usuários nem com leitor de tela.
+8. As dependências são declaradas por faixa de versões; as versões exatas homologadas estão em `docs/evidencias/versoes-ambiente.txt`.
+
+## 11. Decisões pendentes de homologação humana
+Ver o checklist em [HOMOLOGACAO.md](HOMOLOGACAO.md#checklist-de-homologação-humana). Resumo: aprovar o PR e a release; aceitar as mudanças observáveis de erro; decidir RN08 com base legal (Lei nº 10.048/2000) e as limitações 5 e 8; definir autenticação e persistência antes de qualquer uso real.

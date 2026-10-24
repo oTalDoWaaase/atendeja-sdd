@@ -1,0 +1,13 @@
+# Roteiro no navegador — Chromium headless (Playwright do ambiente), contra o container Docker — 2026-10-24 20:31 UTC
+PASS  E01 painel carrega e indica "Conectado"
+PASS  E02 nome vazio exibe erro no formulário
+PASS  E03 fila em ordem de chamada: P-002 P-004 N-001 N-003
+PASS  E04 nome com HTML exibido como texto (sem <img> criado)
+PASS  E05 "Próximo da fila" mostra P-002
+PASS  E06 chamar próximo duas vezes: P-002 P-004
+PASS  E07 concluir atualiza indicadores (aguardando/pref/atendimento/concluídos): 2/0/1/1
+PASS  E08 senha criada por outro cliente aparece em até 8 s (polling de 5 s)
+PASS  E09 com fila vazia, "Chamar próximo" fica desabilitado
+PASS  E10 cadastro apenas com teclado (Enter envia o formulário)
+PASS  E11 375 px em modo escuro sem rolagem horizontal
+PASS  E12 nenhum erro no console
