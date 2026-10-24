@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AtendeJá — Painel de atendimento</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f766e'/%3E%3Ctext x='16' y='22' font-size='16' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'%3EAJ%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">AJ</span>
+      <div>
+        <h1>AtendeJá</h1>
+        <p class="subtitle">Painel de atendimento</p>
+      </div>
+    </div>
+    <div class="topbar-meta">
+      <span id="connection" class="connection" data-state="pending" role="status">Conectando…</span>
+      <a class="link-docs" href="/docs">API</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stats" aria-label="Resumo da fila">
+      <div class="stat"><span class="stat-value" id="stat-waiting">0</span><span class="stat-label">Aguardando</span></div>
+      <div class="stat stat-pref"><span class="stat-value" id="stat-preferred">0</span><span class="stat-label">Preferenciais na fila</span></div>
+      <div class="stat stat-called"><span class="stat-value" id="stat-called">0</span><span class="stat-label">Em atendimento</span></div>
+      <div class="stat stat-done"><span class="stat-value" id="stat-done">0</span><span class="stat-label">Concluídos</span></div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="card">
+        <h2>Nova senha</h2>
+        <form id="ticket-form" novalidate>
+          <label for="name">Nome do cliente</label>
+          <input id="name" name="name" type="text" maxlength="80" autocomplete="off" required
+                 placeholder="Ex.: Ana Souza" aria-describedby="name-help name-error">
+          <p id="name-help" class="help"><span id="name-count">0</span>/80 caracteres. Use dados fictícios neste protótipo.</p>
+          <p id="name-error" class="field-error" hidden></p>
+
+          <fieldset class="priority">
+            <legend>Prioridade</legend>
+            <label class="choice">
+              <input type="radio" name="priority" value="normal" checked>
+              <span>Normal</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="priority" value="preferencial">
+              <span>Preferencial</span>
+            </label>
+          </fieldset>
+          <button type="submit" class="btn btn-secondary" id="create-btn">Gerar senha</button>
+        </form>
+      </section>
+
+      <section class="card call-card">
+        <h2>Próximo da fila</h2>
+        <div id="next-preview" class="next-preview">
+          <p class="empty">Nenhuma senha aguardando.</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-lg" id="call-btn" disabled>Chamar próximo</button>
+        <p class="help">Preferenciais são chamados antes; dentro da mesma prioridade, por ordem de chegada.</p>
+      </section>
+    </aside>
+
+    <div class="content">
+    <section class="card panel-called" aria-labelledby="called-title">
+      <div class="card-head">
+        <h2 id="called-title">Em atendimento</h2>
+      </div>
+      <ul id="called-list" class="ticket-grid"></ul>
+      <p id="called-empty" class="empty">Nenhum atendimento em andamento.</p>
+    </section>
+
+    <section class="card panel-queue" aria-labelledby="queue-title">
+      <div class="card-head">
+        <h2 id="queue-title">Fila de espera</h2>
+        <span class="hint">em ordem de chamada</span>
+      </div>
+      <ol id="queue-list" class="ticket-list"></ol>
+      <p id="queue-empty" class="empty">A fila está vazia.</p>
+    </section>
+
+    <section class="card panel-done" aria-labelledby="done-title">
+      <div class="card-head">
+        <h2 id="done-title">Concluídos</h2>
+        <span class="hint">últimas 20, por número</span>
+      </div>
+      <ul id="done-list" class="ticket-list ticket-list-compact"></ul>
+      <p id="done-empty" class="empty">Nenhum atendimento concluído.</p>
+    </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer class="footer">
+    Protótipo acadêmico · dados mantidos em memória e apagados ao reiniciar o servidor · sem autenticação
+  </footer>
+</body>
+</html>

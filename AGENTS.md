@@ -6,4 +6,8 @@
 - Não introduza autenticação falsa ou persistência sem documentar impacto e testes.
 - Não exponha credenciais, dados pessoais reais ou segredos no repositório.
 - Crie branches feature/*, Pull Requests e revisão humana antes do merge.
-- Atualize docs/DECISOES.md e docs/TESTES.md com decisões e evidências verificáveis.
+- Atualize docs/DECISOES.md, docs/TESTES.md e docs/REFINAMENTOS.md com decisões e evidências verificáveis.
+- Contratos v1.0 da API são fixos; mudanças só por adição e com teste (`test_original_contract_routes_preserved`).
+- Operações de `QueueService` devem permanecer sob o lock; não mova a regra de ordenação para o painel (use `GET /queue`).
+- No painel (`app/static/`), renderize dados apenas com `textContent`; não use `innerHTML`, CDN ou dependências de build.
+- Corrija defeitos reproduzindo-os primeiro e adicionando teste de regressão que falhe no código antigo.
