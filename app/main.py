@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, StringConstraints
+from . import __version__
 from .domain import NAME_MAX_LENGTH, QueueService, Priority, Status, Ticket
 
 STATIC_DIR = Path(__file__).parent / 'static'
@@ -33,7 +34,7 @@ def serialize(ticket: Ticket) -> TicketOutput:
                         status=ticket.status, created_at=ticket.created_at.isoformat())
 
 def create_app() -> FastAPI:
-    app = FastAPI(title='AtendeJá', description='API de senhas de atendimento', version='1.1.0')
+    app = FastAPI(title='AtendeJá', description='API de senhas de atendimento', version=__version__)
     app.state.queue = QueueService()
     app.mount('/static', StaticFiles(directory=STATIC_DIR), name='static')
 

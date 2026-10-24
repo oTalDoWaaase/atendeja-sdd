@@ -1,4 +1,6 @@
-# Registro de refinamentos — v1.0 → v1.1
+# Registro de refinamentos
+
+## v1.0 → v1.1
 
 Refinamento feito na branch `feature/interface-web-e-refinamentos`, a partir do código da Entrega 2, com o apoio do Claude Code (agente de IA). Cada defeito abaixo foi **reproduzido antes da correção** e recebeu teste de regressão. Os quatro testes de regressão foram executados contra o código original da `main` e **falharam** (4 failed), e passam no código corrigido. Nenhuma revisão humana foi realizada até aqui: ver "Pendências de homologação".
 
@@ -18,9 +20,20 @@ Refinamento feito na branch `feature/interface-web-e-refinamentos`, a partir do 
 ## Erro cometido pela IA durante o refinamento
 Na primeira versão de `waiting_queue()`, a anotação `-> list[Ticket]` falhou ao importar (`TypeError: 'function' object is not subscriptable`), porque dentro da classe o nome `list` já se refere ao método `QueueService.list`. O erro só apareceu ao executar o código e foi corrigido com `from __future__ import annotations`. O episódio está registrado como exemplo de que código gerado precisa ser executado e testado, não apenas lido.
 
-## Pendências de homologação humana
+## Pendências de homologação humana (v1.1; consolidadas no checklist de HOMOLOGACAO.md)
 1. Revisar o diff e aprovar o Pull Request (nenhuma revisão humana ocorreu até o momento).
 2. Aceitar as mudanças observáveis nas mensagens de erro (SDD, seção "Contratos").
 3. Avaliar o painel com usuários reais (usabilidade e acessibilidade com leitor de tela não foram testadas).
 4. Decidir sobre a política de prioridade (R5) com base legal.
 5. Confirmar a execução do CI no GitHub Actions após publicar a branch (não verificado neste ambiente).
+
+## v1.1 → 1.0.0 (Entrega 3, branch `feature/entrega-final`)
+Nenhum teste da v1.1 falhou (53 passed). Refinamentos desta etapa:
+
+| # | Tipo | Problema | Evidência | Correção | Verificação |
+|---|------|----------|-----------|----------|-------------|
+| R6 | Lacuna de teste | `app/main.py` linhas 52–53 (`except ValueError` em `POST /tickets`) sem cobertura; parecia código morto | Cobertura de 99% na v1.1. `"\x1f"` passa no Pydantic, falha no `str.strip()` do domínio e resulta em 422 | Mantido; teste adicionado | `test_domain_validation_reached_through_api` |
+| R7 | Higiene | `pytest`/`httpx` na imagem de produção; container rodando como root; sem `.dockerignore`; `test-results.xml` versionado | Auditoria (HOMOLOGACAO §E) | ADR-009, ADR-012 | D3: imagem `runtime` sem pacotes de teste, UID 10001 |
+| R8 | Defeito introduzido e corrigido nesta etapa | Com o usuário não-root, o pytest-cov falhava no container (`SQLITE_CANTOPEN`) | 1ª execução de `docker compose run tests` | `ENV COVERAGE_FILE=/tmp/.coverage` no estágio `test` | D1: 57 passed |
+| R9 | Rastreabilidade | Versão da API (`1.1.0`) divergia da release planejada | — | `__version__ = '1.0.0'` (ADR-011) | `test_api_version_matches_release`, `h08` |
+| R10 | Caso de borda registrado, não alterado | Nomes invisíveis (`\u200b`) ou com `\x00` são aceitos | Execução manual: 201 | Nenhuma: seria regra nova | Decisão humana (SDD, limitação 5) |

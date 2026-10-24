@@ -3,5 +3,9 @@ __pycache__/
 .venv/
 .env
 *.pyc
+# Relatórios gerados localmente ou no CI (evidência congelada fica em docs/evidencias/)
+.coverage
+.coverage.*
 coverage.xml
 htmlcov/
+test-results.xml
